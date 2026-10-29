@@ -5,7 +5,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lenior Voice | Samuel Tech IA</title>
-
 <style>
 :root {
   color-scheme: dark;
@@ -13,44 +12,20 @@
   --panel: #111a23;
   --green: #4dffb5;
   --blue: #56baff;
-  --muted: #9aaab8;
 }
-
 * { box-sizing: border-box; }
-
 body {
   margin: 0;
-  min-height: 100vh;
-  background:
-    radial-gradient(ellipse at top, #12372e 0%, transparent 45%),
-    var(--bg);
+  padding: 22px 14px;
+  background: radial-gradient(ellipse at top, #12372e, var(--bg) 65%);
   color: #f1f7fb;
   font-family: Arial, sans-serif;
-  padding: 24px 14px;
 }
-
-main {
-  width: min(760px, 100%);
-  margin: auto;
-}
-
-header {
-  text-align: center;
-  margin: 18px 0 28px;
-}
-
-.logo {
-  font-size: 42px;
-  margin-bottom: 10px;
-}
-
-h1 {
-  color: var(--green);
-  margin: 8px 0;
-}
-
-p { color: var(--muted); line-height: 1.5; }
-
+main { max-width: 760px; margin: auto; }
+header { text-align: center; padding: 16px 0 24px; }
+.logo { font-size: 42px; color: var(--green); }
+h1 { color: var(--green); letter-spacing: 3px; }
+p { color: #a8bac8; line-height: 1.5; }
 .panel {
   background: var(--panel);
   border: 1px solid #27443f;
@@ -58,80 +33,41 @@ p { color: var(--muted); line-height: 1.5; }
   padding: 18px;
   margin-bottom: 16px;
 }
-
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: bold;
-}
-
+label { display: block; margin-bottom: 8px; font-weight: bold; }
 select, textarea, button {
   width: 100%;
   padding: 13px;
   border-radius: 9px;
   font: inherit;
+  margin-top: 8px;
 }
-
 select, textarea {
   color: white;
   background: #091117;
   border: 1px solid #30434e;
 }
-
-textarea {
-  resize: vertical;
-  min-height: 100px;
-  margin-top: 10px;
-}
-
+textarea { min-height: 90px; resize: vertical; }
 button {
   cursor: pointer;
   background: #0c795b;
   border: 1px solid #31d99e;
   color: white;
   font-weight: bold;
-  margin-top: 10px;
 }
-
-button.secondary {
-  background: #152c40;
-  border-color: #397bb4;
-}
-
-button.stop {
-  background: #46232b;
-  border-color: #a54b5d;
-}
-
-button:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
-
-#status {
-  overflow-wrap: anywhere;
-  color: var(--green);
-}
-
+button.secondary { background: #152c40; border-color: #397bb4; }
+button.stop { background: #46232b; border-color: #a54b5d; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+#status { color: var(--green); overflow-wrap: anywhere; }
 #conversation {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.65;
-  max-height: 320px;
+  max-height: 350px;
   overflow-y: auto;
 }
-
 .small { font-size: 13px; }
-
-.live-indicator {
-  display: inline-block;
-  color: var(--blue);
-  font-size: 13px;
-  margin-top: 8px;
-}
 </style>
 </head>
-
 <body>
 <main>
   <header>
@@ -141,44 +77,42 @@ button:disabled {
   </header>
 
   <section class="panel">
-    <label for="mode">Escolha seu modo</label>
+    <label for="mode">Modo de voz</label>
     <select id="mode">
       <option value="basic">1 — Voz do navegador</option>
       <option value="tts">2 — Voz gerada pela API Gemini</option>
       <option value="live">3 — Conversa em tempo real</option>
     </select>
-
     <p id="modeInfo" class="small">
       O navegador reconhece sua fala e lê a resposta do Lenior.
     </p>
-
     <button id="start">🎙️ Iniciar conversa</button>
     <button id="stop" class="stop">⏹️ Parar</button>
-    <div id="status" role="status">Pronto para iniciar.</div>
-    <div id="liveState" class="live-indicator"></div>
+    <p id="status" role="status">Pronto para iniciar.</p>
   </section>
 
   <section class="panel">
-    <label for="message">Ou escreva uma mensagem</label>
-    <textarea id="message" placeholder="Digite sua pergunta para o Lenior..."></textarea>
+    <label for="message">Ou digite uma mensagem</label>
+    <textarea id="message" placeholder="Digite sua pergunta..."></textarea>
     <button id="send" class="secondary">Enviar mensagem</button>
   </section>
 
   <section class="panel">
     <h3>Conversa</h3>
-    <div id="conversation">Lenior: Olá! Escolha um modo de voz para começar.</div>
+    <div id="conversation">Lenior: Olá! Escolha um modo para começar.</div>
   </section>
 
   <p class="small">
-    O microfone só é ativado após sua ação. Use uma conexão HTTPS e
-    permita o acesso ao microfone quando solicitado.
+    Use HTTPS e permita o microfone quando o navegador solicitar.
+    O modo Live pode consumir cota da API.
   </p>
 </main>
 
 <script>
 const API = "https://programador-api-100.onrender.com";
-
 const $ = id => document.getElementById(id);
+const Recognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
 
 let active = false;
 let busy = false;
@@ -186,80 +120,80 @@ let recognition = null;
 let liveSocket = null;
 let liveStream = null;
 let liveContext = null;
-let liveProcessor = null;
 let liveSource = null;
-let liveNextTime = 0;
+let liveProcessor = null;
+let liveMute = null;
 let liveReady = false;
-let liveAudioBuffer = [];
+let liveNextTime = 0;
+let liveGeneration = 0;
 
-const SpeechRecognitionAPI =
-  window.SpeechRecognition || window.webkitSpeechRecognition;
-
-$("mode").addEventListener("change", () => {
-  const info = {
-    basic: "Reconhecimento de voz do navegador e resposta falada.",
-    tts: "O navegador reconhece sua fala e o Gemini gera o áudio.",
-    live: "Áudio bidirecional com Gemini Live, usando conexão WebSocket."
-  };
-
-  $("modeInfo").textContent = info[$("mode").value];
-});
-
-function status(text) {
-  $("status").textContent = text;
+function setStatus(message) {
+  $("status").textContent = message;
 }
 
 function logMessage(who, text) {
-  $("conversation").textContent +=
-    "\n\n" + who + ": " + text;
+  $("conversation").textContent += "\n\n" + who + ": " + text;
+  $("conversation").scrollTop = $("conversation").scrollHeight;
+}
 
-  $("conversation").scrollTop =
-    $("conversation").scrollHeight;
+// Lê a resposta como texto primeiro, para não quebrar
+// quando o Render devolver HTML em vez de JSON.
+async function readJson(response) {
+  const raw = await response.text();
+
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    console.error("Resposta não JSON:", raw.slice(0, 500));
+    throw new Error(
+      `O servidor retornou HTML/texto (HTTP ${response.status}). ` +
+      "Confira o deploy e a rota no Render."
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(data.erro || `Erro HTTP ${response.status}`);
+  }
+
+  return data;
 }
 
 async function askChat(text) {
   const response = await fetch(API + "/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      mensagem: text,
-      historico: []
-    })
+    body: JSON.stringify({ mensagem: text, historico: [] })
   });
 
-  const data = await response.json();
-
-  if (!response.ok || !data.resposta) {
-    throw new Error(data.erro || "O Lenior não respondeu.");
-  }
-
+  const data = await readJson(response);
+  if (!data.resposta) throw new Error("O chat não retornou resposta.");
   return data.resposta;
 }
 
-function browserSpeak(text) {
+// MODO 1: voz do navegador
+function speakInBrowser(text) {
   return new Promise((resolve, reject) => {
-    if (!("speechSynthesis" in window)) {
-      reject(new Error("Síntese de voz não disponível."));
+    if (!window.speechSynthesis) {
+      reject(new Error("Síntese de voz indisponível."));
       return;
     }
 
     window.speechSynthesis.cancel();
-
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "pt-BR";
-    utterance.rate = 1.0;
+    utterance.rate = 1;
 
-    utterance.onstart = () => status("🔊 Lenior falando...");
+    utterance.onstart = () => setStatus("🔊 Lenior está falando...");
     utterance.onend = resolve;
-    utterance.onerror = () =>
-      reject(new Error("Erro ao reproduzir a voz."));
-
+    utterance.onerror = () => reject(new Error("Falha ao reproduzir voz."));
     window.speechSynthesis.speak(utterance);
   });
 }
 
-async function apiSpeak(text) {
-  status("Gerando áudio com Gemini...");
+// MODO 2: API de síntese de fala
+async function speakWithAPI(text) {
+  setStatus("Gerando áudio com Gemini...");
 
   const response = await fetch(API + "/api/voice/tts", {
     method: "POST",
@@ -267,113 +201,77 @@ async function apiSpeak(text) {
     body: JSON.stringify({ texto: text })
   });
 
-  const data = await response.json();
-
-  if (!response.ok || !data.audio) {
-    throw new Error(data.erro || "Falha na geração do áudio.");
-  }
+  const data = await readJson(response);
+  if (!data.audio) throw new Error("A API não retornou áudio.");
 
   const audio = new Audio(
-    "data:" + (data.formato || "audio/wav") +
-    ";base64," + data.audio
+    `data:${data.formato || "audio/wav"};base64,${data.audio}`
   );
 
-  status("🔊 Reproduzindo áudio...");
+  setStatus("🔊 Reproduzindo resposta...");
   await audio.play();
 
   await new Promise((resolve, reject) => {
     audio.onended = resolve;
-    audio.onerror = () => reject(
-      new Error("Falha na reprodução do áudio.")
-    );
+    audio.onerror = () => reject(new Error("Falha na reprodução."));
   });
 }
 
-async function sendTextMessage() {
-  const text = $("message").value.trim();
-  if (!text || busy) return;
+async function answerWithChat(text) {
+  const answer = await askChat(text);
+  logMessage("Lenior", answer);
 
-  busy = true;
-  $("send").disabled = true;
-  logMessage("Você", text);
-  $("message").value = "";
-
-  try {
-    status("Lenior está pensando...");
-    const answer = await askChat(text);
-    logMessage("Lenior", answer);
-
-    if ($("mode").value === "tts") {
-      await apiSpeak(answer);
-    } else {
-      await browserSpeak(answer);
-    }
-
-    status("Resposta concluída.");
-  } catch (error) {
-    status(error.message);
-  } finally {
-    busy = false;
-    $("send").disabled = false;
+  if ($("mode").value === "tts") {
+    await speakWithAPI(answer);
+  } else {
+    await speakInBrowser(answer);
   }
 }
 
-async function processTranscript(text) {
-  if (!active || busy) return;
-
-  busy = true;
-  status("Lenior está pensando...");
-  logMessage("Você", text);
-
-  try {
-    const answer = await askChat(text);
-    logMessage("Lenior", answer);
-
-    if ($("mode").value === "tts") {
-      await apiSpeak(answer);
-    } else {
-      await browserSpeak(answer);
-    }
-
-    if (active) status("Pode falar novamente.");
-  } catch (error) {
-    status(error.message);
-  } finally {
-    busy = false;
-    if (active && $("mode").value !== "live") {
-      setTimeout(startRecognition, 500);
-    }
-  }
-}
-
+// Modos 1 e 2: reconhecimento de voz pelo navegador
 function startRecognition() {
-  if (!active || busy) return;
+  if (!active || busy || $("mode").value === "live") return;
 
-  if (!SpeechRecognitionAPI) {
-    status("Este navegador não suporta reconhecimento de voz.");
+  if (!Recognition) {
     active = false;
+    setStatus("Reconhecimento não disponível neste navegador.");
     return;
   }
 
   try {
-    recognition = new SpeechRecognitionAPI();
+    recognition = new Recognition();
     recognition.lang = "pt-BR";
     recognition.continuous = false;
     recognition.interimResults = false;
 
-    recognition.onstart = () => status("🎙️ Estou ouvindo...");
-    recognition.onresult = event => {
+    recognition.onstart = () => setStatus("🎙️ Estou ouvindo...");
+    recognition.onresult = async event => {
       const text = event.results[0][0].transcript.trim();
-      if (text) processTranscript(text);
+      if (!text || !active || busy) return;
+
+      logMessage("Você", text);
+      busy = true;
+      setStatus("Lenior está pensando...");
+
+      try {
+        await answerWithChat(text);
+      } catch (error) {
+        setStatus(error.message);
+      } finally {
+        busy = false;
+        if (active && $("mode").value !== "live") {
+          setTimeout(startRecognition, 500);
+        }
+      }
     };
 
     recognition.onerror = event => {
       if (event.error === "not-allowed") {
         active = false;
-        status("Permita o acesso ao microfone.");
+        setStatus("Permita o acesso ao microfone.");
       } else if (event.error !== "no-speech" &&
                  event.error !== "aborted") {
-        status("Erro no reconhecimento: " + event.error);
+        setStatus("Erro de reconhecimento: " + event.error);
       }
     };
 
@@ -384,28 +282,23 @@ function startRecognition() {
     };
 
     recognition.start();
-  } catch (error) {
-    status("Não foi possível iniciar o microfone.");
+  } catch {
+    setStatus("Não foi possível iniciar o microfone. Tente novamente.");
   }
 }
 
-// -------- MODO 3: GEMINI LIVE --------
-
+// MODO 3: Gemini Live via WebSocket e token temporário
 function floatTo16BitPCM(float32) {
   const output = new Int16Array(float32.length);
-
   for (let i = 0; i < float32.length; i++) {
-    const s = Math.max(-1, Math.min(1, float32[i]));
-    output[i] = s < 0 ? s * 32768 : s * 32767;
+    const sample = Math.max(-1, Math.min(1, float32[i]));
+    output[i] = sample < 0 ? sample * 32768 : sample * 32767;
   }
-
   return output;
 }
 
-function downsampleTo16k(input, inputRate) {
-  if (inputRate === 16000) {
-    return floatTo16BitPCM(input);
-  }
+function resampleTo16k(input, inputRate) {
+  if (inputRate === 16000) return floatTo16BitPCM(input);
 
   const ratio = inputRate / 16000;
   const length = Math.floor(input.length / ratio);
@@ -413,96 +306,69 @@ function downsampleTo16k(input, inputRate) {
 
   for (let i = 0; i < length; i++) {
     const start = Math.floor(i * ratio);
-    const end = Math.min(
-      Math.floor((i + 1) * ratio),
-      input.length
-    );
-
+    const end = Math.min(Math.floor((i + 1) * ratio), input.length);
     let sum = 0;
     for (let j = start; j < end; j++) sum += input[j];
-
     output[i] = sum / Math.max(1, end - start);
   }
 
   return floatTo16BitPCM(output);
 }
 
-function arrayBufferToBase64(buffer) {
+function bufferToBase64(buffer) {
   const bytes = new Uint8Array(buffer);
   let binary = "";
-
   for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(
-      ...bytes.subarray(i, i + 0x8000)
-    );
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   }
-
   return btoa(binary);
 }
 
-function base64ToBytes(base64) {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  return bytes;
-}
-
-function playLivePCM(base64) {
+function playLiveAudio(base64) {
   if (!liveContext) return;
 
-  const bytes = base64ToBytes(base64);
+  const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+  const usableBytes = bytes.length - (bytes.length % 2);
   const pcm = new Int16Array(
-    bytes.buffer,
-    bytes.byteOffset,
-    Math.floor(bytes.byteLength / 2)
+    bytes.buffer, bytes.byteOffset, usableBytes / 2
   );
-
   const samples = new Float32Array(pcm.length);
 
-  for (let i = 0; i < pcm.length; i++) {
-    samples[i] = pcm[i] / 32768;
-  }
+  for (let i = 0; i < pcm.length; i++) samples[i] = pcm[i] / 32768;
 
-  const buffer = liveContext.createBuffer(
-    1, samples.length, 24000
-  );
-
-  buffer.copyToChannel(samples, 0);
+  const audioBuffer = liveContext.createBuffer(1, samples.length, 24000);
+  audioBuffer.copyToChannel(samples, 0);
 
   const source = liveContext.createBufferSource();
-  source.buffer = buffer;
+  source.buffer = audioBuffer;
   source.connect(liveContext.destination);
 
-  const startAt = Math.max(
-    liveContext.currentTime + 0.04,
-    liveNextTime
-  );
-
+  const startAt = Math.max(liveContext.currentTime + 0.03, liveNextTime);
   source.start(startAt);
-  liveNextTime = startAt + buffer.duration;
+  liveNextTime = startAt + audioBuffer.duration;
 }
 
 async function startLive() {
   active = true;
-  liveReady = false;
+  const generation = ++liveGeneration;
 
   try {
-    status("Solicitando token temporário...");
-
-    const tokenResponse = await fetch(
-      API + "/api/voice/live-token",
-      { method: "POST" }
-    );
-
-    const tokenData = await tokenResponse.json();
-
-    if (!tokenResponse.ok || !tokenData.token) {
-      throw new Error(tokenData.erro || "Token indisponível.");
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("O microfone exige HTTPS e suporte do navegador.");
     }
+
+    setStatus("Solicitando token temporário...");
+
+    const tokenResponse = await fetch(API + "/api/voice/live-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    });
+
+    const tokenData = await readJson(tokenResponse);
+    if (!tokenData.token) throw new Error("O servidor não retornou token.");
+
+    if (!active || generation !== liveGeneration) return;
 
     liveStream = await navigator.mediaDevices.getUserMedia({
       audio: {
@@ -520,38 +386,50 @@ async function startLive() {
       "wss://generativelanguage.googleapis.com/ws/" +
       "google.ai.generativelanguage.v1beta." +
       "GenerativeService.BidiGenerateContentConstrained" +
-      "?access_token=" +
-      encodeURIComponent(tokenData.token);
+      "?access_token=" + encodeURIComponent(tokenData.token);
 
     liveSocket = new WebSocket(url);
 
     liveSocket.onopen = () => {
       liveSocket.send(JSON.stringify({
         setup: {
-          model: "models/gemini-3.8-live",
+          model: "models/" + "gemini-3.8-live",
           generationConfig: {
-            responseModalities: ["AUDIO"]
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: "Kore" }
+              }
+            }
           },
           systemInstruction: {
             parts: [{
               text:
                 "Você é Lenior, assistente da Samuel Tech IA. " +
-                "Responda em português brasileiro de forma clara, " +
-                "útil e natural."
+                "Fale em português brasileiro, de maneira natural, " +
+                "clara e útil."
             }]
-          }
+          },
+          inputAudioTranscription: {},
+          outputAudioTranscription: {}
         }
       }));
 
-      status("Conectando à sessão Gemini Live...");
+      setStatus("Conectando ao Gemini Live...");
     };
 
-    liveSocket.onmessage = async event => {
+    liveSocket.onmessage = event => {
       let message;
-
       try {
         message = JSON.parse(event.data);
       } catch {
+        console.error("Mensagem Live não JSON:", event.data);
+        return;
+      }
+
+      if (message.error) {
+        setStatus("Erro Gemini Live: " +
+          (message.error.message || "erro desconhecido"));
         return;
       }
 
@@ -560,92 +438,91 @@ async function startLive() {
 
         liveSource = liveContext.createMediaStreamSource(liveStream);
         liveProcessor = liveContext.createScriptProcessor(4096, 1, 1);
+        liveMute = liveContext.createGain();
+        liveMute.gain.value = 0;
 
         liveProcessor.onaudioprocess = event => {
           if (!active || !liveReady ||
               liveSocket?.readyState !== WebSocket.OPEN) return;
 
           const input = event.inputBuffer.getChannelData(0);
-          const pcm = downsampleTo16k(
-            input, liveContext.sampleRate
-          );
+          const pcm = resampleTo16k(input, liveContext.sampleRate);
 
           liveSocket.send(JSON.stringify({
             realtimeInput: {
               audio: {
-                data: arrayBufferToBase64(pcm.buffer),
+                data: bufferToBase64(pcm.buffer),
                 mimeType: "audio/pcm;rate=16000"
               }
             }
           }));
         };
 
-        // Não envia o áudio capturado para as caixas de som.
-        liveProcessor.connect(liveContext.destination);
         liveSource.connect(liveProcessor);
+        liveProcessor.connect(liveMute);
+        liveMute.connect(liveContext.destination);
 
-        status("🎙️ Gemini Live conectado. Pode falar.");
+        setStatus("🎙️ Gemini Live conectado. Pode falar.");
         return;
       }
 
-      const serverContent = message.serverContent;
+      const content = message.serverContent;
+      if (!content) return;
 
-      if (serverContent?.modelTurn?.parts) {
-        for (const part of serverContent.modelTurn.parts) {
-          const audio = part.inlineData?.data;
+      const inputText = content.inputTranscription?.text;
+      if (inputText) logMessage("Você", inputText);
 
-          if (audio) {
-            playLivePCM(audio);
-          }
+      const outputText = content.outputTranscription?.text;
+      if (outputText) logMessage("Lenior", outputText);
 
-          if (part.text) {
-            logMessage("Lenior", part.text);
-          }
-        }
+      for (const part of content.modelTurn?.parts || []) {
+        if (part.inlineData?.data) playLiveAudio(part.inlineData.data);
+        if (part.text) logMessage("Lenior", part.text);
       }
 
-      if (serverContent?.turnComplete) {
-        status("Gemini Live pronto para continuar ouvindo.");
+      if (content.turnComplete) {
+        setStatus("Gemini Live pronto para continuar.");
       }
     };
 
     liveSocket.onerror = () => {
-      status("Erro na conexão Live. Verifique a chave, modelo e cota.");
+      setStatus("Falha WebSocket. Verifique modelo, token e acesso à API.");
     };
 
-    liveSocket.onclose = () => {
+    liveSocket.onclose = event => {
       liveReady = false;
-      if (active) status("Conexão Live encerrada.");
+      if (active) {
+        setStatus("Conexão Live encerrada (código " + event.code + ").");
+      }
     };
   } catch (error) {
     stopVoice();
-    status("Erro no modo Live: " + error.message);
+    setStatus("Erro no modo Live: " + error.message);
   }
 }
 
 function stopVoice() {
   active = false;
+  liveGeneration++;
   liveReady = false;
 
   if (recognition) {
-    try { recognition.abort(); } catch (_) {}
+    try { recognition.abort(); } catch {}
     recognition = null;
   }
 
   if (liveSocket) {
-    try { liveSocket.close(); } catch (_) {}
+    try { liveSocket.close(); } catch {}
     liveSocket = null;
   }
 
-  if (liveProcessor) {
-    liveProcessor.disconnect();
-    liveProcessor = null;
-  }
+  if (liveProcessor) liveProcessor.disconnect();
+  if (liveSource) liveSource.disconnect();
+  if (liveMute) liveMute.disconnect();
 
-  if (liveSource) {
-    liveSource.disconnect();
-    liveSource = null;
-  }
+  liveProcessor = null;
+  liveSource = null;
+  liveMute = null;
 
   if (liveStream) {
     liveStream.getTracks().forEach(track => track.stop());
@@ -658,32 +535,59 @@ function stopVoice() {
   }
 
   window.speechSynthesis?.cancel();
-  status("Voz parada.");
-  $("liveState").textContent = "";
+  setStatus("Voz parada.");
 }
 
 $("start").addEventListener("click", async () => {
   stopVoice();
 
-  const mode = $("mode").value;
-
-  if (mode === "live") {
+  if ($("mode").value === "live") {
     await startLive();
-    return;
+  } else {
+    active = true;
+    startRecognition();
   }
-
-  active = true;
-  startRecognition();
 });
 
 $("stop").addEventListener("click", stopVoice);
-$("send").addEventListener("click", sendTextMessage);
+
+$("send").addEventListener("click", async () => {
+  const text = $("message").value.trim();
+  if (!text || busy) return;
+
+  busy = true;
+  $("send").disabled = true;
+  $("message").value = "";
+  logMessage("Você", text);
+  setStatus("Lenior está pensando...");
+
+  try {
+    await answerWithChat(text);
+    setStatus("Resposta concluída.");
+  } catch (error) {
+    setStatus(error.message);
+  } finally {
+    busy = false;
+    $("send").disabled = false;
+  }
+});
 
 $("message").addEventListener("keydown", event => {
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
-    sendTextMessage();
+    $("send").click();
   }
+});
+
+$("mode").addEventListener("change", () => {
+  const info = {
+    basic: "Voz do navegador: reconhecimento e resposta falada.",
+    tts: "Reconhecimento do navegador e voz gerada pelo Gemini.",
+    live: "Conversa de áudio em tempo real via Gemini Live."
+  };
+
+  $("modeInfo").textContent = info[$("mode").value];
+  stopVoice();
 });
 
 window.addEventListener("beforeunload", stopVoice);
