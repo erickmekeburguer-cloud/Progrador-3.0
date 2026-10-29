@@ -1,0 +1,533 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lenior Programador | Samuel Tech IA</title>
+
+<style>
+:root {
+  --bg: #050807;
+  --panel: #0b1411;
+  --green: #43ffb7;
+  --blue: #43c8ff;
+  --text: #e8fff5;
+  --muted: #91aaa0;
+  --border: rgba(67,255,183,.2);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top left, #103025 0%, transparent 40%),
+    var(--bg);
+  color: var(--text);
+  font-family: Arial, sans-serif;
+}
+
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+}
+
+.sidebar {
+  background: rgba(5,12,9,.95);
+  border-right: 1px solid var(--border);
+  padding: 25px 18px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.logo-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: linear-gradient(135deg,var(--green),var(--blue));
+  color: #04120d;
+  font-size: 25px;
+  font-weight: bold;
+}
+
+.logo h2 { font-size: 16px; margin: 0; }
+.logo small { color: var(--muted); }
+
+button { cursor: pointer; font: inherit; }
+
+.new-chat {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #10251c;
+  color: var(--green);
+}
+
+.side-card {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.side-card p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.footer {
+  margin-top: 35px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+header {
+  padding: 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header h1 { margin: 0; font-size: 18px; }
+
+.status {
+  color: var(--green);
+  font-size: 12px;
+}
+
+.chat {
+  width: min(850px,100%);
+  margin: auto;
+  padding: 30px 20px;
+  flex: 1;
+}
+
+.welcome {
+  text-align: center;
+  margin: 55px 0 35px;
+}
+
+.orb {
+  margin: auto auto 22px;
+  width: 75px;
+  height: 75px;
+  display: grid;
+  place-items: center;
+  border-radius: 23px;
+  background: linear-gradient(135deg,var(--green),var(--blue));
+  color: #04120d;
+  font-size: 35px;
+  font-weight: bold;
+}
+
+.welcome h2 { font-size: 30px; }
+.welcome h2 span { color: var(--green); }
+
+.welcome p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.suggestions {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.suggestion {
+  padding: 14px;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 12px;
+}
+
+.suggestion:hover {
+  border-color: var(--green);
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.message.user { flex-direction: row-reverse; }
+
+.avatar {
+  flex-shrink: 0;
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #04120d;
+  background: linear-gradient(135deg,var(--green),var(--blue));
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.user .avatar {
+  color: var(--text);
+  background: #193128;
+}
+
+.bubble {
+  max-width: 85%;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 4px 15px 15px;
+  background: var(--panel);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.user .bubble {
+  border-radius: 15px 4px 15px 15px;
+  background: #14271f;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 8px;
+}
+
+.composer-wrap {
+  padding: 15px 20px 22px;
+  background: linear-gradient(transparent,var(--bg));
+}
+
+.composer {
+  width: min(820px,100%);
+  margin: auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: #0b1411;
+}
+
+textarea {
+  width: 100%;
+  resize: none;
+  min-height: 50px;
+  max-height: 180px;
+  padding: 10px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+textarea::placeholder { color: #688277; }
+
+.composer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.hint { color: var(--muted); font-size: 10px; }
+
+.send {
+  padding: 11px 17px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg,var(--green),var(--blue));
+  color: #04120d;
+  font-weight: bold;
+}
+
+.send:disabled { opacity: .5; }
+
+.error { color: #ffaaaa; }
+
+@media(max-width:700px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  header { padding: 17px; }
+  .chat { padding: 18px 12px; }
+  .suggestions { grid-template-columns: 1fr; }
+  .welcome h2 { font-size: 25px; }
+  .composer-wrap { padding: 12px; }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">L</div>
+      <div>
+        <h2>LENIOR <span style="color:#43ffb7">AI</span></h2>
+        <small>SAMUEL TECH IA</small>
+      </div>
+    </div>
+
+    <button class="new-chat" id="newChat">＋ Nova conversa</button>
+
+    <div class="side-card">
+      <strong>⌘ Programação</strong>
+      <p>Ajuda com código, lógica, APIs e desenvolvimento de software.</p>
+    </div>
+
+    <div class="side-card">
+      <strong>◈ Multimodelo</strong>
+      <p>Backend integrado para trabalhar com Gemini e Ollama.</p>
+    </div>
+
+    <div class="footer">
+      Lenior Programador v4.0.0<br>
+      Construído para Samuel Tech IA
+    </div>
+  </aside>
+
+  <main>
+    <header>
+      <div>
+        <h1>Lenior Programador</h1>
+        <small style="color:#91aaa0">Seu assistente de desenvolvimento</small>
+      </div>
+      <span class="status" id="status">● API configurada</span>
+    </header>
+
+    <section class="chat">
+      <div class="welcome" id="welcome">
+        <div class="orb">L</div>
+        <h2>Vamos construir o <span>futuro.</span></h2>
+        <p>
+          Sou o Lenior, assistente de programação da Samuel Tech IA.
+          Vamos transformar suas ideias em projetos!
+        </p>
+
+        <div class="suggestions">
+          <button class="suggestion" data-prompt="Explique uma API REST com um exemplo em JavaScript.">
+            ⌘ Explique uma API REST
+          </button>
+          <button class="suggestion" data-prompt="Me ajude a criar um chatbot usando Node.js.">
+            ◈ Criar um chatbot
+          </button>
+          <button class="suggestion" data-prompt="Me ensine lógica de programação com um exercício simples.">
+            ⌁ Aprender lógica
+          </button>
+          <button class="suggestion" data-prompt="Explique como funciona o Electron e como criar um navegador.">
+            ⌘ Criar um navegador
+          </button>
+        </div>
+      </div>
+
+      <div class="messages" id="messages"></div>
+    </section>
+
+    <div class="composer-wrap">
+      <form class="composer" id="chatForm">
+        <textarea
+          id="messageInput"
+          maxlength="20000"
+          placeholder="Pergunte ao Lenior sobre programação..."
+          aria-label="Mensagem para o Lenior"
+        ></textarea>
+
+        <div class="composer-bottom">
+          <span class="hint">Enter envia · Shift + Enter quebra linha</span>
+          <button class="send" id="sendButton" type="submit">Enviar ↗</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script>
+// URL do backend do Lenior no Render
+const API_URL = "https://programador-api-2lnr.onrender.com/chat";
+
+const form = document.getElementById("chatForm");
+const input = document.getElementById("messageInput");
+const messages = document.getElementById("messages");
+const welcome = document.getElementById("welcome");
+const sendButton = document.getElementById("sendButton");
+const statusText = document.getElementById("status");
+const history = [];
+
+let busy = false;
+
+function addMessage(role, text, meta = "", isError = false) {
+  welcome.style.display = "none";
+
+  const row = document.createElement("div");
+  row.className = "message " + (role === "user" ? "user" : "assistant");
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = role === "user" ? "EU" : "L";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble" + (isError ? " error" : "");
+
+  // textContent exibe o texto com segurança, sem executar HTML enviado pela IA.
+  bubble.textContent = text;
+
+  if (meta) {
+    const metaEl = document.createElement("div");
+    metaEl.className = "meta";
+    metaEl.textContent = meta;
+    bubble.appendChild(metaEl);
+  }
+
+  row.append(avatar, bubble);
+  messages.appendChild(row);
+  row.scrollIntoView({ behavior: "smooth", block: "end" });
+}
+
+function setBusy(value) {
+  busy = value;
+  sendButton.disabled = value;
+  input.disabled = value;
+  sendButton.textContent = value ? "Pensando..." : "Enviar ↗";
+}
+
+async function sendMessage(text) {
+  const mensagem = text.trim();
+  if (!mensagem || busy) return;
+
+  addMessage("user", mensagem);
+
+  // Envia ao backend o histórico anterior à mensagem atual.
+  const historico = history.slice(-12).map(item => ({
+    role: item.role === "assistant" ? "model" : "user",
+    content: item.content
+  }));
+
+  history.push({ role: "user", content: mensagem });
+  input.value = "";
+  input.style.height = "50px";
+  setBusy(true);
+  statusText.textContent = "● IA respondendo";
+
+  const loading = document.createElement("div");
+  loading.className = "message";
+  loading.id = "loading";
+  loading.innerHTML = '<div class="avatar">L</div><div class="bubble">Lenior está pensando...</div>';
+  messages.appendChild(loading);
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mensagem, historico })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.erro || data.error || "Erro HTTP " + response.status);
+    }
+
+    if (!data.resposta) {
+      throw new Error("A API não retornou uma resposta.");
+    }
+
+    history.push({ role: "assistant", content: data.resposta });
+
+    const provider = data.provedor
+      ? "Provedor: " + data.provedor
+      : "Lenior";
+
+    const model = data.modelo
+      ? " · Modelo: " + data.modelo
+      : "";
+
+    addMessage("assistant", data.resposta, provider + model);
+    statusText.textContent = "● API conectada";
+
+  } catch (error) {
+    addMessage(
+      "assistant",
+      "Não consegui conectar ao Lenior.\n\nErro: " +
+      (error.message || "Erro desconhecido") +
+      "\n\nConfira se o backend está ativo no Render e se o CORS permite a conexão.",
+      "Falha na conexão",
+      true
+    );
+
+    statusText.textContent = "● Erro na conexão";
+
+  } finally {
+    document.getElementById("loading")?.remove();
+    setBusy(false);
+    input.focus();
+  }
+}
+
+form.addEventListener("submit", event => {
+  event.preventDefault();
+  sendMessage(input.value);
+});
+
+input.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    form.requestSubmit();
+  }
+});
+
+input.addEventListener("input", () => {
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 180) + "px";
+});
+
+document.querySelectorAll("[data-prompt]").forEach(button => {
+  button.addEventListener("click", () => {
+    input.value = button.dataset.prompt;
+    input.focus();
+  });
+});
+
+document.getElementById("newChat").addEventListener("click", () => {
+  if (busy) return;
+
+  history.length = 0;
+  messages.replaceChildren();
+  welcome.style.display = "";
+  input.value = "";
+  input.focus();
+  statusText.textContent = "● API configurada";
+});
+</script>
+</body>
+</html>
