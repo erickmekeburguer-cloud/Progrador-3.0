@@ -4,6 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050807">
 <title>Lenior Programador | Samuel Tech IA</title>
 
 <style>
@@ -28,6 +29,9 @@ body {
   color: var(--text);
   font-family: Arial, sans-serif;
 }
+
+button, textarea { font: inherit; }
+button { cursor: pointer; }
 
 .app {
   min-height: 100vh;
@@ -63,8 +67,6 @@ body {
 .logo h2 { font-size: 16px; margin: 0; }
 .logo small { color: var(--muted); }
 
-button { cursor: pointer; font: inherit; }
-
 .new-chat {
   width: 100%;
   padding: 13px;
@@ -92,6 +94,7 @@ button { cursor: pointer; font: inherit; }
   margin-top: 35px;
   color: var(--muted);
   font-size: 11px;
+  line-height: 1.8;
 }
 
 main {
@@ -107,6 +110,7 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 header h1 { margin: 0; font-size: 18px; }
@@ -165,9 +169,7 @@ header h1 { margin: 0; font-size: 18px; }
   border-radius: 12px;
 }
 
-.suggestion:hover {
-  border-color: var(--green);
-}
+.suggestion:hover { border-color: var(--green); }
 
 .messages {
   display: flex;
@@ -203,6 +205,7 @@ header h1 { margin: 0; font-size: 18px; }
 
 .bubble {
   max-width: 85%;
+  min-width: 0;
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 4px 15px 15px;
@@ -223,6 +226,8 @@ header h1 { margin: 0; font-size: 18px; }
   font-size: 10px;
   margin-top: 8px;
 }
+
+.error { color: #ffaaaa; }
 
 .composer-wrap {
   padding: 15px 20px 22px;
@@ -271,9 +276,7 @@ textarea::placeholder { color: #688277; }
   font-weight: bold;
 }
 
-.send:disabled { opacity: .5; }
-
-.error { color: #ffaaaa; }
+.send:disabled { opacity: .5; cursor: wait; }
 
 @media(max-width:700px) {
   .app { grid-template-columns: 1fr; }
@@ -283,6 +286,7 @@ textarea::placeholder { color: #688277; }
   .suggestions { grid-template-columns: 1fr; }
   .welcome h2 { font-size: 25px; }
   .composer-wrap { padding: 12px; }
+  .hint { max-width: 65%; line-height: 1.5; }
 }
 </style>
 </head>
@@ -308,7 +312,7 @@ textarea::placeholder { color: #688277; }
 
     <div class="side-card">
       <strong>◈ Multimodelo</strong>
-      <p>Backend integrado para trabalhar com Gemini e Ollama.</p>
+      <p>Backend preparado para Gemini e Ollama.</p>
     </div>
 
     <div class="footer">
@@ -323,7 +327,7 @@ textarea::placeholder { color: #688277; }
         <h1>Lenior Programador</h1>
         <small style="color:#91aaa0">Seu assistente de desenvolvimento</small>
       </div>
-      <span class="status" id="status">● API configurada</span>
+      <span class="status" id="status">● Conectando...</span>
     </header>
 
     <section class="chat">
@@ -373,8 +377,8 @@ textarea::placeholder { color: #688277; }
 </div>
 
 <script>
-// URL do backend do Lenior no Render
-const API_URL = "https://programador-api-2lnr.onrender.com/chat";
+// IMPORTANTE: endereço atualizado do backend no Render.
+const API_URL = "https://programador-api-100.onrender.com/chat";
 
 const form = document.getElementById("chatForm");
 const input = document.getElementById("messageInput");
@@ -399,7 +403,7 @@ function addMessage(role, text, meta = "", isError = false) {
   const bubble = document.createElement("div");
   bubble.className = "bubble" + (isError ? " error" : "");
 
-  // textContent exibe o texto com segurança, sem executar HTML enviado pela IA.
+  // Exibe o texto como texto simples, sem executar HTML.
   bubble.textContent = text;
 
   if (meta) {
@@ -421,19 +425,34 @@ function setBusy(value) {
   sendButton.textContent = value ? "Pensando..." : "Enviar ↗";
 }
 
+async function checkAPI() {
+  try {
+    const response = await fetch(
+      "https://programador-api-100.onrender.com/health"
+    );
+
+    if (!response.ok) throw new Error("API indisponível");
+
+    statusText.textContent = "● Backend online";
+  } catch {
+    statusText.textContent = "● Verifique a conexão";
+  }
+}
+
 async function sendMessage(text) {
   const mensagem = text.trim();
   if (!mensagem || busy) return;
 
   addMessage("user", mensagem);
 
-  // Envia ao backend o histórico anterior à mensagem atual.
+  // O backend recebe as mensagens anteriores no formato esperado.
   const historico = history.slice(-12).map(item => ({
     role: item.role === "assistant" ? "model" : "user",
     content: item.content
   }));
 
   history.push({ role: "user", content: mensagem });
+
   input.value = "";
   input.style.height = "50px";
   setBusy(true);
@@ -442,27 +461,48 @@ async function sendMessage(text) {
   const loading = document.createElement("div");
   loading.className = "message";
   loading.id = "loading";
-  loading.innerHTML = '<div class="avatar">L</div><div class="bubble">Lenior está pensando...</div>';
+
+  const loadingAvatar = document.createElement("div");
+  loadingAvatar.className = "avatar";
+  loadingAvatar.textContent = "L";
+
+  const loadingBubble = document.createElement("div");
+  loadingBubble.className = "bubble";
+  loadingBubble.textContent = "Lenior está pensando...";
+
+  loading.append(loadingAvatar, loadingBubble);
   messages.appendChild(loading);
 
   try {
     const response = await fetch(API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mensagem, historico })
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        mensagem,
+        historico
+      })
     });
 
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(data.erro || data.error || "Erro HTTP " + response.status);
+      throw new Error(
+        data.erro ||
+        data.error ||
+        "Erro HTTP " + response.status
+      );
     }
 
     if (!data.resposta) {
-      throw new Error("A API não retornou uma resposta.");
+      throw new Error("A API não retornou o campo 'resposta'.");
     }
 
-    history.push({ role: "assistant", content: data.resposta });
+    history.push({
+      role: "assistant",
+      content: data.resposta
+    });
 
     const provider = data.provedor
       ? "Provedor: " + data.provedor
@@ -472,16 +512,25 @@ async function sendMessage(text) {
       ? " · Modelo: " + data.modelo
       : "";
 
-    addMessage("assistant", data.resposta, provider + model);
+    addMessage(
+      "assistant",
+      data.resposta,
+      provider + model
+    );
+
     statusText.textContent = "● API conectada";
 
   } catch (error) {
+    const detail = error && error.message
+      ? error.message
+      : "Erro desconhecido";
+
     addMessage(
       "assistant",
-      "Não consegui conectar ao Lenior.\n\nErro: " +
-      (error.message || "Erro desconhecido") +
-      "\n\nConfira se o backend está ativo no Render e se o CORS permite a conexão.",
-      "Falha na conexão",
+      "Não consegui obter uma resposta.\n\nErro: " +
+      detail +
+      "\n\nSe o backend estiver online, verifique os logs do Render para descobrir se o problema é no Gemini ou no Ollama.",
+      "Falha na comunicação",
       true
     );
 
@@ -508,13 +557,15 @@ input.addEventListener("keydown", event => {
 
 input.addEventListener("input", () => {
   input.style.height = "auto";
-  input.style.height = Math.min(input.scrollHeight, 180) + "px";
+  input.style.height =
+    Math.min(input.scrollHeight, 180) + "px";
 });
 
 document.querySelectorAll("[data-prompt]").forEach(button => {
   button.addEventListener("click", () => {
     input.value = button.dataset.prompt;
     input.focus();
+    input.dispatchEvent(new Event("input"));
   });
 });
 
@@ -525,9 +576,12 @@ document.getElementById("newChat").addEventListener("click", () => {
   messages.replaceChildren();
   welcome.style.display = "";
   input.value = "";
+  input.style.height = "50px";
+  statusText.textContent = "● Backend online";
   input.focus();
-  statusText.textContent = "● API configurada";
 });
+
+checkAPI();
 </script>
 </body>
 </html>
